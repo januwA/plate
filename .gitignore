@@ -1,4 +1,5 @@
 src/apps/*
+!src/apps/.gitkeep
 
 # Logs
 logs
