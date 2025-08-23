@@ -1,3 +1,8 @@
+## 安装依赖
+```
+npm install
+```
+
 ## 创建一个app
 这会创建一个目录和一些基础文件，在`./src/apps/myapp`
 ```
@@ -7,7 +12,7 @@ node .\manage.mjs startapp myapp
 ## 从git拉取app
 这些app会被安装在`./src/apps/`目录下
 ```
-node .\manage.mjs fetchapp 'https://januwA:<your token>@github.com/januwA/puzzle_game.git' 'https://github.com/januwA/action_game.git'
+node .\manage.mjs fetchapp https://github.com/januwA/puzzle_game.git https://github.com/januwA/action_game.git
 ```
 
 ## 本地开发

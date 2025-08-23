@@ -1,8 +1,8 @@
-import { Link, Route, Routes } from 'react-router-dom'
+import { createBrowserRouter, Link, Route, Routes } from 'react-router-dom'
 
-const modules = import.meta.glob('./apps/*/main.tsx', { eager: true });
+const apps = import.meta.glob('./apps/*/main.tsx', { eager: true });
 
-const routeData = Object.keys(modules).map((path) => {
+const routeData = Object.keys(apps).map((path) => {
   // 从路径中提取目录名称，例如 "./apps/home/main.tsx" -> "home"
   const directoryName = path.split('/')[2];
 
@@ -13,12 +13,12 @@ const routeData = Object.keys(modules).map((path) => {
 
   // 获取页面的内容
   // @ts-ignore
-  const { Main, Settings } = modules[path];
+  const { Settings } = apps[path];
 
   return {
     path: routePath,
-    name: Settings.app_name || directoryName,
-    component: Main,
+    directoryName,
+    Settings,
   };
 });
 
@@ -31,6 +31,7 @@ import { Breadcrumb, Layout, Menu, theme } from 'antd';
 const { Header, Content, Sider } = Layout;
 
 const App: React.FC = () => {
+
   const {
     token: { colorBgContainer, borderRadiusLG },
   } = theme.useToken();
@@ -54,20 +55,17 @@ const App: React.FC = () => {
             defaultSelectedKeys={['1']}
             defaultOpenKeys={['sub1']}
             style={{ height: '100%', borderInlineEnd: 0 }}
-            items={routeData.map((link) => {
-              return {
-                key: link.path,
-                // icon: React.createElement(icon),
-                label: <Link to={link.path}>{link.name}</Link>,
-                // children: Array.from({ length: 4 }).map((_, j) => {
-                //   const subKey = index * 4 + j + 1;
-                //   return {
-                //     key: subKey,
-                //     label: `option${subKey}`,
-                //   };
-                // }),
-              }
-            })}
+            items={
+              [
+                {
+                  key: '/',
+                  label: <Link to='/'>主页</Link>,
+                },
+                ...routeData.map((link) => {
+                  return link.Settings.menu_items;
+                }).flat()
+              ]
+            }
           />
         </Sider>
         <Layout style={{ padding: '0 24px 24px' }}>
@@ -85,10 +83,8 @@ const App: React.FC = () => {
             }}
           >
             <Routes>
-              {routeData.map((link) => (
-                <Route key={link.path} path={link.path} element={<link.component />} >
-                </Route>
-              ))}
+              <Route index path='/' element={<Dashboard />} />
+              {routeData.map((link) => link.Settings.route)}
             </Routes>
           </Content>
         </Layout>
@@ -96,5 +92,11 @@ const App: React.FC = () => {
     </Layout>
   );
 };
+
+function Dashboard() {
+  return <div>
+    <h1>仪表盘</h1>
+  </div>
+}
 
 export default App
