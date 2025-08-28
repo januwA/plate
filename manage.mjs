@@ -1,6 +1,9 @@
 import { exec } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
+import { readdir, readFile } from 'node:fs/promises';
+import process from 'node:process';
+import semver from "semver";
 
 // 忽略前两个元素（Node.js路径和脚本路径）
 const args = process.argv.slice(2);
@@ -61,5 +64,65 @@ export const Settings = {
       if (stdout) console.log(`stdout: ${stdout}`);
       if (stderr) console.error(`stderr: ${stderr}`);
     });
+  }
+} else if (args[0] === 'mergepackage') {
+  // 合并每个app下的package.json到plate的package.json中去
+  const dirName = path.resolve(import.meta.dirname, 'src/apps');
+
+  const appsDirs = await readdir(dirName, { withFileTypes: true });
+
+  // 过滤出所有是目录的项
+  const appFolders = appsDirs.filter(dirent => dirent.isDirectory());
+
+  const mergePkg = {
+    dependencies: {},
+    devDependencies: {}
+  };
+
+  // 读取appsyinai
+  for (const folder of appFolders) {
+    // 拼接每个子目录下的 package.json 路径
+    const pkgPath = path.join(dirName, folder.name, 'package.json');
+
+    try {
+      // 尝试读取 package.json 文件内容
+      const data = await readFile(pkgPath, 'utf8');
+      const pkg = JSON.parse(data);
+      mergeDep(pkg.dependencies, mergePkg.dependencies);
+      mergeDep(pkg.devDependencies, mergePkg.devDependencies);
+    } catch (err) {
+      // 如果 package.json 文件不存在或读取失败，忽略并继续
+      if (err.code === 'ENOENT') {
+        console.warn(`Warning: No package.json found in ${folder.name}`);
+        continue;
+      }
+      throw err; // 其他错误则抛出
+    }
+  }
+
+  // 合并到/package.json
+  console.log(mergePkg);
+  
+}
+
+/**
+ * 合并定义的依赖
+ * 包名已存在，只留下版本号最大的包
+ * @param {*} dep 
+ * @param {*} mDep 
+ */
+function mergeDep(dep, mDep) {
+  if (dep) {
+    for (const key in dep) {
+      if (mDep[key]) {
+        const v = dep[key];
+        const vOld = mDep[key];
+        if (semver.gt(semver.coerce(v), semver.coerce(vOld))) {
+          mDep[key] = dep[key];
+        }
+      } else {
+        mDep[key] = dep[key];
+      }
+    }
   }
 }
